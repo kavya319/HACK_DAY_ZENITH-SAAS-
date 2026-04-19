@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+langchain
+langchain-community
+langchain-qdrant
+sentence-transformers
+pymupdf

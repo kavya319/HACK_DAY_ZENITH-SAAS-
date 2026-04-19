@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot Platform</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; line-height: 1.6; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; }
+        .status { color: #007bff; font-weight: bold; }
+        button { cursor: pointer; padding: 8px 16px; }
+    </style>
+</head>
+<body>
+
+<h1>🚀 Chatbot Platform</h1>
+
+<h2>1. Create Chatbot</h2>
+<button onclick="createBot()" id="btnCreate">Create Bot</button>
+<p id="botIdDisplay" class="status"></p>
+
+<hr>
+
+<h2>2. Upload PDF</h2>
+<input type="file" id="fileInput" accept=".pdf" />
+<button onclick="upload()" id="btnUpload">Upload</button>
+<p id="uploadStatus"></p>
+
+<hr>
+
+<h2>3. Your Embed Script</h2>
+<p>Copy and paste this into your website's <code>&lt;body&gt;</code>:</p>
+<pre id="scriptDisplay">Your script will appear here after creating a bot...</pre>
+
+<script>
+    const API_BASE = "http://localhost:8000";
+    let botId = localStorage.getItem("savedBotId") || "";
+
+    // Initialize UI if botId exists
+    if (botId) {
+        updateUI(botId);
+    }
+
+    function updateUI(id) {
+        document.getElementById("botIdDisplay").innerText = "Active Bot ID: " + id;
+        const embedCode = `<script src="${API_BASE}/static/widget.js" data-bot-id="${id}"><\/script>`;
+        document.getElementById("scriptDisplay").innerText = embedCode;
+    }
+
+    // CREATE BOT
+    async function createBot() {
+        const btn = document.getElementById("btnCreate");
+        btn.disabled = true;
+        btn.innerText = "Creating...";
+
+        try {
+            const res = await fetch(`${API_BASE}/create-bot`, { method: "POST" });
+            if (!res.ok) throw new Error("Failed to create bot");
+            
+            const data = await res.json();
+            botId = data.bot_id;
+            
+            localStorage.setItem("savedBotId", botId);
+            updateUI(botId);
+        } catch (err) {
+            alert("Error: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Create Bot";
+        }
+    }
+
+    // UPLOAD PDF
+    async function upload() {
+        if (!botId) {
+            alert("Please create a bot first!");
+            return;
+        }
+
+        const fileInput = document.getElementById("fileInput");
+        const status = document.getElementById("uploadStatus");
+        const file = fileInput.files[0];
+
+        if (!file) {
+            alert("Please select a PDF file!");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        status.innerText = "Uploading and processing PDF...";
+        
+        try {
+            // Note: We use a URL search param for bot_id as per your original design
+            const res = await fetch(`${API_BASE}/upload?bot_id=${botId}`, {
+                method: "POST",
+                body: formData
+            });
+
+            if (!res.ok) throw new Error("Upload failed");
+
+            status.innerText = "✅ PDF uploaded and indexed successfully!";
+            fileInput.value = ""; // Clear input
+        } catch (err) {
+            status.innerText = "❌ Error: " + err.message;
+        }
+    }
+</script>
+
+</body>
+</html>
